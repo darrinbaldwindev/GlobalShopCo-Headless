@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# WordPress local/runtime files
+wp-content/uploads/
+wp-content/cache/
+wp-content/upgrade/
+
+# Build/runtime output
+dist/
+build/
+coverage/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
