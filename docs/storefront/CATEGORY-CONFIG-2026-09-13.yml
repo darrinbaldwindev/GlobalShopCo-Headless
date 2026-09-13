@@ -1,4 +1,4 @@
-version: 2
+version: 3
 status: implementation-ready-not-live
 commerce_authority: Shopify
 commercial_approval_authority: darrinbaldwindev/GlobalShopCo
@@ -105,7 +105,7 @@ categories:
     h1: Shopify to Amazon
     intro: Products being assessed for future Amazon marketplace suitability across demand, competition, fees, fulfilment, restrictions and margin.
     source_authority: Shopify
-    channel_authority: darrinbaldwindev/GlobalShopCo
+    channel_authority: darrinbaldwindev/GlobalShopCo#23
     channel_state: pre-setup-research
     shopify_query: null
     empty_state: Amazon is still in pre-setup research. No product is shown as Amazon-ready until the channel and exact SKU economics are verified.
@@ -141,4 +141,7 @@ channel_filters:
     require_channel_setup_complete: true
     require_explicit_channel_approval: true
     require_category_and_sku_eligibility: true
+    require_seller_of_record_compatibility: true
+    require_marketplace_permission: true
+    require_fulfilment_model_decision: true
     require_positive_channel_economics: true
