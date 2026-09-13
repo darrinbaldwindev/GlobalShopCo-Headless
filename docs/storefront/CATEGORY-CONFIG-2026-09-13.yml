@@ -1,0 +1,88 @@
+version: 1
+status: implementation-ready-not-live
+commerce_authority: Shopify
+commercial_approval_authority: darrinbaldwindev/GlobalShopCo
+categories:
+  - slug: home-organisation
+    route: /home-organisation/
+    label: Home Organisation
+    h1: Home Organisation
+    intro: Practical storage and organisation ideas for kitchens, bathrooms, wardrobes and small spaces.
+    shopify_query: 'product_type:"Home Organisation" OR tag:home-organisation'
+    empty_state: We are selecting Home Organisation products against supplier, delivery, value and quality checks. Browse the category while products are being qualified.
+    subcategories:
+      - Pantry & Kitchen Storage
+      - Bathroom Organisation
+      - Under-Sink Storage
+      - Shelving & Vertical Storage
+      - Wardrobe & Clothing Storage
+      - Desk & Small-Space Organisation
+  - slug: pet
+    route: /pet/
+    label: Pet
+    h1: Pet
+    intro: Useful products for play, feeding, travel, storage, cleanup and everyday pet safety.
+    shopify_query: 'tag:pet-safety OR tag:pet'
+    empty_state: We are qualifying pet products for supplier reliability, delivery, value and marketplace compatibility. Approved products will appear here as they pass the gate.
+    subcategories:
+      - Toys & Enrichment
+      - Feeding & Hydration
+      - Walking & Travel
+      - Pet Storage
+      - Home & Cleanup
+      - Safety & Visibility
+  - slug: baby
+    route: /baby/
+    label: Baby
+    h1: Baby
+    intro: Practical baby-care products selected with safety, suitability and delivery evidence in mind.
+    shopify_query: 'tag:baby-safety'
+    empty_state: We are reviewing baby products for current supplier, safety, delivery and value evidence before adding them for sale.
+    subcategories:
+      - Feeding
+      - Bath & Care
+      - Travel & Portable Care
+      - Nursery
+      - Home Organisation
+  - slug: safety
+    route: /safety/
+    label: Safety
+    h1: Safety
+    intro: Products for home proofing, travel safety, visibility, containment and monitoring.
+    shopify_query: 'tag:baby-safety OR tag:pet-safety OR tag:home-proofing OR tag:night-walk-visibility'
+    empty_state: Safety products are being checked for current product identity, claims, compliance and supplier evidence before customer sale.
+    subcategories:
+      - Baby Proofing
+      - Pet Travel Safety
+      - Home Containment
+      - Night Visibility
+      - Monitoring & Alerts
+  - slug: mobile-computer-accessories
+    route: /mobile-computer-accessories/
+    label: Mobile & Computer Accessories
+    h1: Mobile & Computer Accessories
+    intro: Practical accessories for desks, laptops, devices, charging, connectivity and travel.
+    shopify_query: 'product_type:"Mobile & Computer Accessories" OR tag:mobile-computer-accessories'
+    empty_state: We are qualifying compact technology accessories for supplier reliability, compatibility, delivery and value before adding them for sale.
+    subcategories:
+      - Laptop Desks & Stands
+      - Desk Organisation
+      - Charging & Power
+      - Cables & Connectivity
+      - Device Protection
+      - Travel Accessories
+filters:
+  exclude_if_any_tag:
+    - review-required
+    - not-publication-approved
+    - qualification-draft
+    - not-for-sale
+  exclude_status:
+    - ARCHIVED
+  require_positive_price: true
+  require_positive_commercial_approval: true
+  do_not_infer_approval_from:
+    - DRAFT status
+    - exact-competitor-verified tag
+    - product existence
+    - non-zero price
