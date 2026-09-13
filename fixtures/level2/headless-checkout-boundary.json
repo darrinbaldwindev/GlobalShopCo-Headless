@@ -1,0 +1,9 @@
+{
+  "schema": "globalshopco-headless.level2.v1",
+  "cart_source": "headless-fixture",
+  "checkout_authority": "shopify",
+  "inventory_authority": "shopify",
+  "order_authority": "shopify",
+  "payment_authority": "shopify",
+  "production_write": false
+}
