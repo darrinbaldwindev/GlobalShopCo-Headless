@@ -1,0 +1,54 @@
+{
+  "schema": "globalshopco-headless.channel-isolation.v1",
+  "production_write": false,
+  "commerce_authority": "shopify",
+  "products": [
+    {
+      "id": "fixture-shopify-only",
+      "owned_site_approved": true,
+      "ebay_approved": false,
+      "amazon_approved": false,
+      "expected_routes": ["owned-site"],
+      "must_not_render_in": ["shopify-ebay", "shopify-amazon"]
+    },
+    {
+      "id": "fixture-ebay-only",
+      "owned_site_approved": true,
+      "ebay_approved": true,
+      "amazon_approved": false,
+      "expected_routes": ["owned-site", "shopify-ebay"],
+      "must_not_render_in": ["shopify-amazon"]
+    },
+    {
+      "id": "fixture-amazon-only",
+      "owned_site_approved": true,
+      "ebay_approved": false,
+      "amazon_approved": true,
+      "expected_routes": ["owned-site", "shopify-amazon"],
+      "must_not_render_in": ["shopify-ebay"]
+    },
+    {
+      "id": "fixture-multichannel",
+      "owned_site_approved": true,
+      "ebay_approved": true,
+      "amazon_approved": true,
+      "expected_routes": ["owned-site", "shopify-ebay", "shopify-amazon"],
+      "must_not_render_in": []
+    },
+    {
+      "id": "fixture-unapproved",
+      "owned_site_approved": false,
+      "ebay_approved": true,
+      "amazon_approved": true,
+      "expected_routes": [],
+      "must_not_render_in": ["owned-site", "shopify-ebay", "shopify-amazon"]
+    }
+  ],
+  "invariants": [
+    "channel approval never implies owned-site approval",
+    "ebay approval never implies amazon approval",
+    "amazon approval never implies ebay approval",
+    "myprimedelivery evidence cannot satisfy amazon approval",
+    "no fixture creates price inventory cart checkout or order authority outside Shopify"
+  ]
+}
