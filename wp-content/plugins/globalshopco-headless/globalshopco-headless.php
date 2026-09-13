@@ -2,7 +2,7 @@
 /**
  * Plugin Name: GlobalShopCo Headless
  * Description: Minimal Shopify Storefront API integration for the GlobalShopCo M3 vertical slice.
- * Version: 0.1.0
+ * Version: 0.2.0
  */
 
 defined('ABSPATH') || exit;
@@ -39,7 +39,7 @@ function gsco_shopify_request($query, $variables = []) {
         return new WP_Error('gsco_shopify_http', 'Shopify request failed.', ['status' => $status]);
     }
     if (!empty($body['errors'])) {
-        return new WP_Error('gsco_shopify_graphql', 'Shopify returned a GraphQL error.', ['errors' => $body['errors']]);
+        return new WP_Error('gsco_shopify_graphql', 'Shopify returned a GraphQL error.');
     }
     return $body['data'] ?? [];
 }
@@ -64,6 +64,40 @@ GRAPHQL;
     return $data['product'] ?? null;
 }
 
+function gsco_create_cart_checkout_url($variant_id) {
+    if (!is_string($variant_id) || strpos($variant_id, 'gid://shopify/ProductVariant/') !== 0) {
+        return new WP_Error('gsco_invalid_variant', 'Product variant is unavailable.');
+    }
+
+    $mutation = <<<'GRAPHQL'
+mutation CartCreate($input: CartInput!) {
+  cartCreate(input: $input) {
+    cart { id checkoutUrl }
+    userErrors { field message }
+  }
+}
+GRAPHQL;
+    $data = gsco_shopify_request($mutation, [
+        'input' => [
+            'lines' => [[
+                'quantity' => 1,
+                'merchandiseId' => $variant_id,
+            ]],
+        ],
+    ]);
+    if (is_wp_error($data)) return $data;
+
+    $payload = $data['cartCreate'] ?? null;
+    if (!is_array($payload) || !empty($payload['userErrors'])) {
+        return new WP_Error('gsco_cart_create', 'Unable to start Shopify checkout.');
+    }
+    $checkout_url = $payload['cart']['checkoutUrl'] ?? '';
+    if (!is_string($checkout_url) || !preg_match('#^https://#i', $checkout_url)) {
+        return new WP_Error('gsco_checkout_url', 'Shopify checkout is unavailable.');
+    }
+    return $checkout_url;
+}
+
 function gsco_product_shortcode($atts) {
     $atts = shortcode_atts(['handle' => 'gsco-test-001'], $atts, 'gsco_product');
     $handle = sanitize_title($atts['handle']);
@@ -84,7 +118,18 @@ function gsco_product_shortcode($atts) {
     if ($variant) {
         $price = esc_html($variant['price']['amount'] . ' ' . $variant['price']['currencyCode']);
         $html .= '<p><strong>' . $price . '</strong></p>';
-        $html .= $variant['availableForSale'] ? '<p>Available</p>' : '<p>Currently unavailable</p>';
+        if (!empty($variant['availableForSale'])) {
+            $checkout_url = gsco_create_cart_checkout_url($variant['id'] ?? '');
+            if (is_wp_error($checkout_url)) {
+                $html .= '<p>Checkout temporarily unavailable.</p>';
+            } else {
+                $html .= '<p><a class="gsco-buy" href="' . esc_url($checkout_url) . '" rel="nofollow">Buy via Shopify</a></p>';
+            }
+        } else {
+            $html .= '<p>Currently unavailable</p>';
+        }
+    } else {
+        $html .= '<p>Product variant unavailable.</p>';
     }
     $html .= '</article>';
     return $html;
