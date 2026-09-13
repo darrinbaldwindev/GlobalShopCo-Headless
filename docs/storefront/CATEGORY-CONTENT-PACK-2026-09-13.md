@@ -50,17 +50,39 @@ Editorial modules: Building a more comfortable laptop setup; cable organisation 
 Empty state: Products are being assessed for supplier reliability, pricing, delivery and compatibility before they are added here.
 Merchandising rule: the existing Artiss laptop desk qualification draft is not automatically approved for sale.
 
+## Shopify to eBay
+Route: `/shopify-ebay/`
+Kind: channel category
+H1: Shopify to eBay
+Intro: A curated view of GlobalShopCo products being prepared for eBay. Products appear here only after marketplace permission, fulfilment compatibility, stock control, freight and eBay economics are verified.
+Subcategories: Home Storage & Organisation; Pet Accessories; Kids Storage & Organisation; Kitchen & Pantry Organisation; Mobile & Computer Accessories; Garden & Outdoor Utility; Baby & Home Safety; Automotive Accessories; Fitness & Exercise Accessories; Cleaning & Household Utility.
+Editorial modules: What makes a product suitable for eBay; delivery and returns expectations; category buying guides; verified marketplace-ready product roundups once evidence exists.
+Empty state: We are still verifying eBay candidates. No product is presented as eBay-ready until it passes the eBay channel gate.
+Merchandising rule: ordinary Shopify presence or dropshipping support does not confer eBay eligibility. Canonical channel gate is GlobalShopCo issue #17.
+
+## Shopify to Amazon
+Route: `/shopify-amazon/`
+Kind: channel category
+H1: Shopify to Amazon
+Intro: A future marketplace view of GlobalShopCo products being assessed for Amazon based on demand, competition, fees, fulfilment, category restrictions and margin.
+Initial research clusters: Home & Household; Pet; Baby & Safety; Mobile & Computer Accessories; Kitchen & Pantry; other evidence-qualified categories.
+Editorial modules: How Amazon suitability differs from the main store; FBA vs FBM research; category restrictions; size/weight economics; price competition; future Amazon-ready product roundups only after setup.
+Empty state: Shopify to Amazon is still in pre-setup research. We are not presenting any product as Amazon-ready yet.
+Merchandising rule: do not infer Amazon eligibility from Shopify approval, eBay approval or MyPrimeDelivery data. Exact marketplace/category/SKU eligibility and channel economics must be verified first.
+
 ## Shared category UX rules
 - remain useful when zero products are qualified;
 - avoid fake product counts;
 - avoid claims such as best, top-rated, safe, certified or free delivery unless supported by exact evidence;
-- render Shopify product data only after the product passes the owned-site publication gate;
+- render Shopify product data only after the relevant owned-site or channel publication gate passes;
 - use editorial copy for discovery without disguising research candidates as inventory;
-- link purchase actions to Shopify cart/checkout only.
+- link owned-site purchase actions to Shopify cart/checkout only;
+- link marketplace actions only to verified live marketplace listings once those channels exist and publication is approved.
 
 ## Metadata pattern
 Title: `<Category> | GlobalShopCo`
-Meta description pattern: `Shop practical <category> products selected for value, usefulness and Australian delivery. New products are added as supplier and commercial checks are completed.`
+Meta description pattern for product categories: `Shop practical <category> products selected for value, usefulness and Australian delivery. New products are added as supplier and commercial checks are completed.`
+Channel pages should describe the current verified channel state and must not imply live eBay/Amazon availability when none exists.
 Do not emit dynamic product-count claims unless the count comes from the approved Shopify-backed result set.
 
-Current status: five launch-priority category destinations now have implementation-ready content. This does not mean the WordPress pages are deployed or that products are commercially approved.
+Current status: seven priority category destinations now have implementation-ready content. This does not mean the WordPress pages are deployed, marketplace channels are operational, or products are commercially/channel approved.
