@@ -2,13 +2,33 @@
 
 This private repository is the designated future source location for the **Global Shop Co headless WordPress storefront implementation**.
 
+## Current sequencing
+
+The storefront now follows a **category-first** preparation strategy while commercial product qualification continues in the parent `GlobalShopCo` project.
+
+Launch-priority presentation routes:
+
+1. Home Organisation
+2. Pet
+3. Baby
+4. Safety
+5. Mobile & Computer Accessories
+
+Implementation-ready category architecture and copy are recorded in:
+
+- [`docs/storefront/CATEGORY-ARCHITECTURE-2026-09-13.md`](docs/storefront/CATEGORY-ARCHITECTURE-2026-09-13.md)
+- [`docs/storefront/CATEGORY-CONTENT-PACK-2026-09-13.md`](docs/storefront/CATEGORY-CONTENT-PACK-2026-09-13.md)
+
+Category destinations may exist editorially before products are qualified, using safe zero-product states. Research candidates must not appear purchasable until the parent GlobalShopCo commercial gate explicitly approves them.
+
 ## Scope
 
-The first planned slice is strictly non-production:
+The implementation remains strictly governed and non-production until separately authorised:
 
-1. A controlled test product is retrieved through an approved Shopify Storefront API path.
-2. A WordPress headless storefront presents the approved product fields and safe failure states.
-3. The purchase action hands off to the approved Shopify cart/checkout path.
+1. WordPress/headless pages present approved category/editorial content.
+2. Approved Shopify product data is retrieved through an authorised Storefront API path.
+3. Only commercially qualified products are rendered as purchasable.
+4. Purchase actions hand off to the approved Shopify cart/checkout path.
 
 Shopify remains the commerce, catalogue, product, price, inventory, cart, checkout, and order authority. This repository must not duplicate those systems of record or process payment.
 
