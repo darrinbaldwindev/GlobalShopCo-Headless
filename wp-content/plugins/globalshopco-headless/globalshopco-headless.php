@@ -2,7 +2,7 @@
 /**
  * Plugin Name: GlobalShopCo Headless
  * Description: Minimal Shopify Storefront API integration for the GlobalShopCo M3 vertical slice.
- * Version: 0.2.0
+ * Version: 0.3.0
  */
 
 defined('ABSPATH') || exit;
@@ -12,7 +12,31 @@ function gsco_shopify_config() {
         'store_domain' => defined('GSCO_SHOPIFY_STORE_DOMAIN') ? GSCO_SHOPIFY_STORE_DOMAIN : getenv('GSCO_SHOPIFY_STORE_DOMAIN'),
         'token' => defined('GSCO_SHOPIFY_STOREFRONT_TOKEN') ? GSCO_SHOPIFY_STOREFRONT_TOKEN : getenv('GSCO_SHOPIFY_STOREFRONT_TOKEN'),
         'api_version' => defined('GSCO_SHOPIFY_API_VERSION') ? GSCO_SHOPIFY_API_VERSION : (getenv('GSCO_SHOPIFY_API_VERSION') ?: '2026-07'),
+        'checkout_host' => defined('GSCO_SHOPIFY_CHECKOUT_HOST') ? GSCO_SHOPIFY_CHECKOUT_HOST : getenv('GSCO_SHOPIFY_CHECKOUT_HOST'),
     ];
+}
+
+function gsco_normalize_host($value) {
+    if (!is_string($value) || trim($value) === '') return '';
+    $value = trim($value);
+    $parsed = parse_url(strpos($value, '://') === false ? 'https://' . $value : $value, PHP_URL_HOST);
+    return is_string($parsed) ? strtolower(rtrim($parsed, '.')) : '';
+}
+
+function gsco_validate_checkout_url($checkout_url) {
+    if (!is_string($checkout_url) || !preg_match('#^https://#i', $checkout_url)) {
+        return new WP_Error('gsco_checkout_url', 'Shopify checkout is unavailable.');
+    }
+
+    $config = gsco_shopify_config();
+    $expected_host = gsco_normalize_host(!empty($config['checkout_host']) ? $config['checkout_host'] : $config['store_domain']);
+    $actual_host = gsco_normalize_host($checkout_url);
+
+    if ($expected_host === '' || $actual_host === '' || $actual_host !== $expected_host) {
+        return new WP_Error('gsco_checkout_host', 'Shopify checkout is unavailable.');
+    }
+
+    return $checkout_url;
 }
 
 function gsco_shopify_request($query, $variables = []) {
@@ -92,10 +116,7 @@ GRAPHQL;
         return new WP_Error('gsco_cart_create', 'Unable to start Shopify checkout.');
     }
     $checkout_url = $payload['cart']['checkoutUrl'] ?? '';
-    if (!is_string($checkout_url) || !preg_match('#^https://#i', $checkout_url)) {
-        return new WP_Error('gsco_checkout_url', 'Shopify checkout is unavailable.');
-    }
-    return $checkout_url;
+    return gsco_validate_checkout_url($checkout_url);
 }
 
 function gsco_product_shortcode($atts) {
