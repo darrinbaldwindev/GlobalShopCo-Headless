@@ -14,23 +14,13 @@ class WP_Error {
     public $code;
     public $message;
     public $data;
-    public function __construct($code = '', $message = '', $data = null) {
-        $this->code = $code;
-        $this->message = $message;
-        $this->data = $data;
-    }
+    public function __construct($code = '', $message = '', $data = null) { $this->code = $code; $this->message = $message; $this->data = $data; }
 }
-
 $GLOBALS['gsco_mock_responses'] = [];
 $GLOBALS['gsco_requests'] = [];
-
 function is_wp_error($value) { return $value instanceof WP_Error; }
 function wp_json_encode($value) { return json_encode($value); }
-function wp_remote_post($url, $args) {
-    $GLOBALS['gsco_requests'][] = ['url' => $url, 'args' => $args];
-    if (!$GLOBALS['gsco_mock_responses']) return new WP_Error('mock_empty', 'No mock response queued.');
-    return array_shift($GLOBALS['gsco_mock_responses']);
-}
+function wp_remote_post($url, $args) { $GLOBALS['gsco_requests'][] = ['url' => $url, 'args' => $args]; if (!$GLOBALS['gsco_mock_responses']) return new WP_Error('mock_empty', 'No mock response queued.'); return array_shift($GLOBALS['gsco_mock_responses']); }
 function wp_remote_retrieve_response_code($response) { return $response['response']['code'] ?? 0; }
 function wp_remote_retrieve_body($response) { return $response['body'] ?? ''; }
 function shortcode_atts($defaults, $atts, $shortcode = '') { return array_merge($defaults, $atts); }
@@ -39,45 +29,13 @@ function esc_attr($value) { return htmlspecialchars((string) $value, ENT_QUOTES,
 function esc_url($value) { return filter_var((string) $value, FILTER_SANITIZE_URL); }
 function esc_html($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function add_shortcode($tag, $callback) { return true; }
-
 require __DIR__ . '/../wp-content/plugins/globalshopco-headless/globalshopco-headless.php';
+function mock_json($payload, $status = 200) { return ['response' => ['code' => $status], 'body' => json_encode($payload)]; }
+function product_payload($available = true, $with_variant = true) { return ['data' => ['product' => ['id' => 'gid://shopify/Product/1','handle' => 'gsco-test-001','title' => 'Synthetic Test Product','description' => 'Fixture only','featuredImage' => null,'variants' => ['nodes' => $with_variant ? [['id' => 'gid://shopify/ProductVariant/101','sku' => 'SYNTH-001','price' => ['amount' => '19.95', 'currencyCode' => 'AUD'],'availableForSale' => $available]] : []]]]]; }
+function cart_payload($checkout = 'https://example.myshopify.com/checkouts/synthetic', $user_errors = []) { return ['data' => ['cartCreate' => ['cart' => ['id' => 'gid://shopify/Cart/1', 'checkoutUrl' => $checkout], 'userErrors' => $user_errors]]]; }
+function reset_mocks($responses) { $GLOBALS['gsco_mock_responses'] = $responses; $GLOBALS['gsco_requests'] = []; }
+function assert_true($condition, $message) { if (!$condition) { fwrite(STDERR, "FAIL: {$message}\n"); exit(1); } }
 
-function mock_json($payload, $status = 200) {
-    return ['response' => ['code' => $status], 'body' => json_encode($payload)];
-}
-function product_payload($available = true, $with_variant = true) {
-    return ['data' => ['product' => [
-        'id' => 'gid://shopify/Product/1',
-        'handle' => 'gsco-test-001',
-        'title' => 'Synthetic Test Product',
-        'description' => 'Fixture only',
-        'featuredImage' => null,
-        'variants' => ['nodes' => $with_variant ? [[
-            'id' => 'gid://shopify/ProductVariant/101',
-            'sku' => 'SYNTH-001',
-            'price' => ['amount' => '19.95', 'currencyCode' => 'AUD'],
-            'availableForSale' => $available,
-        ]] : []],
-    ]]];
-}
-function cart_payload($checkout = 'https://example.myshopify.com/checkouts/synthetic', $user_errors = []) {
-    return ['data' => ['cartCreate' => [
-        'cart' => ['id' => 'gid://shopify/Cart/1', 'checkoutUrl' => $checkout],
-        'userErrors' => $user_errors,
-    ]]];
-}
-function reset_mocks($responses) {
-    $GLOBALS['gsco_mock_responses'] = $responses;
-    $GLOBALS['gsco_requests'] = [];
-}
-function assert_true($condition, $message) {
-    if (!$condition) {
-        fwrite(STDERR, "FAIL: {$message}\n");
-        exit(1);
-    }
-}
-
-// Success: controlled product -> Shopify-hosted checkout, with no token rendered.
 reset_mocks([mock_json(product_payload()), mock_json(cart_payload())]);
 $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
 assert_true(strpos($html, 'https://example.myshopify.com/checkouts/synthetic') !== false, 'success path renders Shopify checkout URL');
@@ -86,69 +44,52 @@ assert_true(strpos($html, 'test-token-must-never-render') === false, 'Storefront
 assert_true(count($GLOBALS['gsco_requests']) === 2, 'success path performs one product query and one cart mutation');
 assert_true(($GLOBALS['gsco_requests'][1]['args']['headers']['X-Shopify-Storefront-Access-Token'] ?? null) === 'test-token-must-never-render', 'token stays server-side in request header');
 
-// Missing variant: fail closed and never attempt cart creation.
 reset_mocks([mock_json(product_payload(true, false))]);
 $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
-assert_true(strpos($html, 'Product variant unavailable.') !== false, 'missing variant fails closed');
-assert_true(count($GLOBALS['gsco_requests']) === 1, 'missing variant does not create a cart');
+assert_true(strpos($html, 'Product variant unavailable.') !== false && count($GLOBALS['gsco_requests']) === 1, 'missing variant fails closed');
 
-// Unavailable variant: fail closed and never attempt cart creation.
 reset_mocks([mock_json(product_payload(false, true))]);
 $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
-assert_true(strpos($html, 'Currently unavailable') !== false, 'unavailable variant is not purchasable');
-assert_true(count($GLOBALS['gsco_requests']) === 1, 'unavailable variant does not create a cart');
-assert_true(strpos($html, 'Buy via Shopify') === false, 'unavailable variant renders no purchase control');
-assert_true(strpos($html, '/checkouts/') === false, 'unavailable variant renders no checkout destination');
+assert_true(strpos($html, 'Currently unavailable') !== false && count($GLOBALS['gsco_requests']) === 1, 'unavailable variant fails closed');
+assert_true(strpos($html, 'Buy via Shopify') === false && strpos($html, '/checkouts/') === false, 'unavailable variant renders no purchase destination');
 
-// Shopify cart userErrors: client receives only generic recoverable wording.
-reset_mocks([
-    mock_json(product_payload()),
-    mock_json(cart_payload('', [['field' => ['lines'], 'message' => 'Synthetic detailed provider error']]))
-]);
+reset_mocks([mock_json(product_payload()), mock_json(cart_payload('', [['field' => ['lines'], 'message' => 'Synthetic detailed provider error']]))]);
 $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
-assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'cart userErrors fail closed');
-assert_true(strpos($html, 'Synthetic detailed provider error') === false, 'provider error detail is not rendered');
+assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false && strpos($html, 'Synthetic detailed provider error') === false, 'cart userErrors fail closed without provider detail');
 
-// Malformed provider response: fail closed.
 reset_mocks([mock_json(product_payload()), ['response' => ['code' => 200], 'body' => 'not-json']]);
 $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
 assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'malformed Shopify response fails closed');
 
-// Direct invalid variant IDs cannot reach Shopify.
 reset_mocks([]);
 $result = gsco_create_cart_checkout_url('not-a-shopify-variant');
-assert_true(is_wp_error($result) && $result->code === 'gsco_invalid_variant', 'invalid variant ID is rejected before network call');
-assert_true(count($GLOBALS['gsco_requests']) === 0, 'invalid variant ID performs no network call');
+assert_true(is_wp_error($result) && $result->code === 'gsco_invalid_variant' && count($GLOBALS['gsco_requests']) === 0, 'invalid variant ID cannot reach Shopify');
 
-// Unexpected HTTPS checkout hosts are rejected rather than rendered.
-reset_mocks([mock_json(product_payload()), mock_json(cart_payload('https://unexpected.example/checkout/synthetic'))]);
-$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
-assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'unexpected checkout host fails closed');
-assert_true(strpos($html, 'unexpected.example') === false, 'unexpected checkout host never reaches rendered HTML');
+foreach ([
+    ['https://unexpected.example/checkout/synthetic', 'unexpected checkout host'],
+    ['https://example.myshopify.com.attacker.test/checkouts/synthetic', 'suffix-confusable checkout host'],
+    ['http://example.myshopify.com/checkouts/synthetic', 'protocol downgrade'],
+    ['https://user:pass@example.myshopify.com/checkouts/synthetic', 'userinfo credential-host confusion'],
+    ['https://example.myshopify.com:8443/checkouts/synthetic', 'unexpected explicit port'],
+    ['https:///checkouts/synthetic', 'malformed checkout URL'],
+] as [$url, $label]) {
+    reset_mocks([mock_json(product_payload()), mock_json(cart_payload($url))]);
+    $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
+    assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, $label . ' fails closed');
+    assert_true(strpos($html, 'Buy via Shopify') === false, $label . ' renders no purchase control');
+}
 
-// A hostname that merely ends with the configured host text is still a different registrable host.
-reset_mocks([mock_json(product_payload()), mock_json(cart_payload('https://example.myshopify.com.attacker.test/checkouts/synthetic'))]);
-$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
-assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'suffix-confusable checkout host fails closed');
-assert_true(strpos($html, 'attacker.test') === false, 'suffix-confusable host never reaches rendered HTML');
-
-// Protocol downgrade is rejected even when the checkout host itself matches.
-reset_mocks([mock_json(product_payload()), mock_json(cart_payload('http://example.myshopify.com/checkouts/synthetic'))]);
-$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
-assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'non-HTTPS checkout destination fails closed');
-assert_true(strpos($html, 'http://example.myshopify.com') === false, 'non-HTTPS checkout destination never reaches rendered HTML');
-
-// Missing checkoutUrl fails closed even when Shopify returns a cart object.
 reset_mocks([mock_json(product_payload()), mock_json(cart_payload(''))]);
 $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
-assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'missing checkoutUrl fails closed');
-assert_true(strpos($html, 'Buy via Shopify') === false, 'missing checkoutUrl renders no purchase control');
+assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false && strpos($html, 'Buy via Shopify') === false, 'missing checkoutUrl fails closed');
 
-// Explicit non-production checkout host override is supported without widening to arbitrary hosts.
 putenv('GSCO_SHOPIFY_CHECKOUT_HOST=checkout.example.test');
+reset_mocks([mock_json(product_payload()), mock_json(cart_payload('https://checkout.example.test.attacker.test/cart/synthetic'))]);
+$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
+assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false && strpos($html, 'Buy via Shopify') === false, 'configured non-production override cannot widen beyond exact host');
 reset_mocks([mock_json(product_payload()), mock_json(cart_payload('https://checkout.example.test/cart/synthetic'))]);
 $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
-assert_true(strpos($html, 'https://checkout.example.test/cart/synthetic') !== false, 'configured checkout host is accepted');
+assert_true(strpos($html, 'https://checkout.example.test/cart/synthetic') !== false, 'exact configured checkout host is accepted');
 putenv('GSCO_SHOPIFY_CHECKOUT_HOST=');
 
-fwrite(STDOUT, "PASS: 11 deterministic M3 checkout-handoff cases plus unavailable-output assertions\n");
+fwrite(STDOUT, "PASS: 15 deterministic M3 checkout-handoff cases plus fail-closed output assertions\n");
