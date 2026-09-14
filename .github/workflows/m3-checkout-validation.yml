@@ -1,0 +1,31 @@
+name: M3 checkout validation
+
+on:
+  push:
+    branches:
+      - agent/chatgpt/m3-baseline
+    paths:
+      - 'wp-content/plugins/globalshopco-headless/**'
+      - 'tests/m3-checkout-handoff-test.php'
+      - '.github/workflows/m3-checkout-validation.yml'
+  pull_request:
+    paths:
+      - 'wp-content/plugins/globalshopco-headless/**'
+      - 'tests/m3-checkout-handoff-test.php'
+      - '.github/workflows/m3-checkout-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show PHP version
+        run: php -v
+      - name: Syntax check plugin
+        run: php -l wp-content/plugins/globalshopco-headless/globalshopco-headless.php
+      - name: Run deterministic checkout-handoff tests
+        run: php tests/m3-checkout-handoff-test.php
