@@ -61,6 +61,19 @@ reset_mocks([mock_json(product_payload()), ['response' => ['code' => 200], 'body
 $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
 assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'malformed Shopify response fails closed');
 
+// SG-05: provider/API error material must never serialize secret-shaped values into browser HTML.
+reset_mocks([mock_json(product_payload()), mock_json(cart_payload('', [['field' => ['lines'], 'message' => 'test-token-must-never-render']]))]);
+$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
+assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false && strpos($html, 'test-token-must-never-render') === false, 'cart provider error cannot reflect secret-shaped value');
+
+reset_mocks([mock_json(product_payload()), mock_json(['errors' => [['message' => 'test-token-must-never-render']]])]);
+$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
+assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false && strpos($html, 'test-token-must-never-render') === false, 'GraphQL error cannot reflect secret-shaped value');
+
+reset_mocks([mock_json(product_payload()), ['response' => ['code' => 500], 'body' => 'upstream debug token=test-token-must-never-render']]);
+$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
+assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false && strpos($html, 'test-token-must-never-render') === false, 'HTTP error body cannot reflect secret-shaped value');
+
 reset_mocks([]);
 $result = gsco_create_cart_checkout_url('not-a-shopify-variant');
 assert_true(is_wp_error($result) && $result->code === 'gsco_invalid_variant' && count($GLOBALS['gsco_requests']) === 0, 'invalid variant ID cannot reach Shopify');
@@ -103,4 +116,4 @@ $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
 assert_true(strpos($html, 'https://checkout.example.test/cart/synthetic') !== false, 'exact configured checkout host is accepted');
 putenv('GSCO_SHOPIFY_CHECKOUT_HOST=');
 
-fwrite(STDOUT, "PASS: 19 deterministic M3 checkout-handoff cases plus fail-closed output assertions\n");
+fwrite(STDOUT, "PASS: deterministic M3 checkout-handoff cases plus SG-05 secret-boundary regressions\n");
