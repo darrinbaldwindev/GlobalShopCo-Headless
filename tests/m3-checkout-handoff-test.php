@@ -8,6 +8,7 @@ define('ABSPATH', __DIR__ . '/');
 putenv('GSCO_SHOPIFY_STORE_DOMAIN=example.myshopify.com');
 putenv('GSCO_SHOPIFY_STOREFRONT_TOKEN=test-token-must-never-render');
 putenv('GSCO_SHOPIFY_API_VERSION=2026-07');
+putenv('GSCO_SHOPIFY_CHECKOUT_HOST=');
 
 class WP_Error {
     public $code;
@@ -117,4 +118,17 @@ $result = gsco_create_cart_checkout_url('not-a-shopify-variant');
 assert_true(is_wp_error($result) && $result->code === 'gsco_invalid_variant', 'invalid variant ID is rejected before network call');
 assert_true(count($GLOBALS['gsco_requests']) === 0, 'invalid variant ID performs no network call');
 
-fwrite(STDOUT, "PASS: 6 deterministic M3 checkout-handoff cases\n");
+// Unexpected HTTPS checkout hosts are rejected rather than rendered.
+reset_mocks([mock_json(product_payload()), mock_json(cart_payload('https://unexpected.example/checkout/synthetic'))]);
+$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
+assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'unexpected checkout host fails closed');
+assert_true(strpos($html, 'unexpected.example') === false, 'unexpected checkout host never reaches rendered HTML');
+
+// Explicit non-production checkout host override is supported without widening to arbitrary hosts.
+putenv('GSCO_SHOPIFY_CHECKOUT_HOST=checkout.example.test');
+reset_mocks([mock_json(product_payload()), mock_json(cart_payload('https://checkout.example.test/cart/synthetic'))]);
+$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
+assert_true(strpos($html, 'https://checkout.example.test/cart/synthetic') !== false, 'configured checkout host is accepted');
+putenv('GSCO_SHOPIFY_CHECKOUT_HOST=');
+
+fwrite(STDOUT, "PASS: 8 deterministic M3 checkout-handoff cases\n");
