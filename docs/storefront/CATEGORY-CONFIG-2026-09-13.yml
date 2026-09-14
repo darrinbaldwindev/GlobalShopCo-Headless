@@ -1,4 +1,4 @@
-version: 3
+version: 4
 status: implementation-ready-not-live
 commerce_authority: Shopify
 commercial_approval_authority: darrinbaldwindev/GlobalShopCo
@@ -39,7 +39,7 @@ categories:
     kind: product-category
     h1: Baby
     intro: Practical baby-care products selected with safety, suitability and delivery evidence in mind.
-    shopify_query: 'tag:baby-safety'
+    shopify_query: 'tag:baby OR tag:baby-safety'
     empty_state: We are reviewing baby products for current supplier, safety, delivery and value evidence before adding them for sale.
     subcategories:
       - Feeding
