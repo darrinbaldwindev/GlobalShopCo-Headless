@@ -97,6 +97,8 @@ reset_mocks([mock_json(product_payload(false, true))]);
 $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
 assert_true(strpos($html, 'Currently unavailable') !== false, 'unavailable variant is not purchasable');
 assert_true(count($GLOBALS['gsco_requests']) === 1, 'unavailable variant does not create a cart');
+assert_true(strpos($html, 'Buy via Shopify') === false, 'unavailable variant renders no purchase control');
+assert_true(strpos($html, '/checkouts/') === false, 'unavailable variant renders no checkout destination');
 
 // Shopify cart userErrors: client receives only generic recoverable wording.
 reset_mocks([
@@ -124,6 +126,24 @@ $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
 assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'unexpected checkout host fails closed');
 assert_true(strpos($html, 'unexpected.example') === false, 'unexpected checkout host never reaches rendered HTML');
 
+// A hostname that merely ends with the configured host text is still a different registrable host.
+reset_mocks([mock_json(product_payload()), mock_json(cart_payload('https://example.myshopify.com.attacker.test/checkouts/synthetic'))]);
+$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
+assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'suffix-confusable checkout host fails closed');
+assert_true(strpos($html, 'attacker.test') === false, 'suffix-confusable host never reaches rendered HTML');
+
+// Protocol downgrade is rejected even when the checkout host itself matches.
+reset_mocks([mock_json(product_payload()), mock_json(cart_payload('http://example.myshopify.com/checkouts/synthetic'))]);
+$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
+assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'non-HTTPS checkout destination fails closed');
+assert_true(strpos($html, 'http://example.myshopify.com') === false, 'non-HTTPS checkout destination never reaches rendered HTML');
+
+// Missing checkoutUrl fails closed even when Shopify returns a cart object.
+reset_mocks([mock_json(product_payload()), mock_json(cart_payload(''))]);
+$html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
+assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, 'missing checkoutUrl fails closed');
+assert_true(strpos($html, 'Buy via Shopify') === false, 'missing checkoutUrl renders no purchase control');
+
 // Explicit non-production checkout host override is supported without widening to arbitrary hosts.
 putenv('GSCO_SHOPIFY_CHECKOUT_HOST=checkout.example.test');
 reset_mocks([mock_json(product_payload()), mock_json(cart_payload('https://checkout.example.test/cart/synthetic'))]);
@@ -131,4 +151,4 @@ $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
 assert_true(strpos($html, 'https://checkout.example.test/cart/synthetic') !== false, 'configured checkout host is accepted');
 putenv('GSCO_SHOPIFY_CHECKOUT_HOST=');
 
-fwrite(STDOUT, "PASS: 8 deterministic M3 checkout-handoff cases\n");
+fwrite(STDOUT, "PASS: 11 deterministic M3 checkout-handoff cases plus unavailable-output assertions\n");
