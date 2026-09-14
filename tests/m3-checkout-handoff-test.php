@@ -72,11 +72,22 @@ foreach ([
     ['https://user:pass@example.myshopify.com/checkouts/synthetic', 'userinfo credential-host confusion'],
     ['https://example.myshopify.com:8443/checkouts/synthetic', 'unexpected explicit port'],
     ['https:///checkouts/synthetic', 'malformed checkout URL'],
+    ['https://example.myshopify.com%2eattacker.test/checkouts/synthetic', 'encoded host confusion'],
+    ["https://example.myshopify.com\t.attacker.test/checkouts/synthetic", 'whitespace host confusion'],
 ] as [$url, $label]) {
     reset_mocks([mock_json(product_payload()), mock_json(cart_payload($url))]);
     $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
     assert_true(strpos($html, 'Checkout temporarily unavailable.') !== false, $label . ' fails closed');
     assert_true(strpos($html, 'Buy via Shopify') === false, $label . ' renders no purchase control');
+}
+
+foreach ([
+    'https://EXAMPLE.MYSHOPIFY.COM/checkouts/case-normalized',
+    'https://example.myshopify.com./checkouts/trailing-dot',
+] as $url) {
+    reset_mocks([mock_json(product_payload()), mock_json(cart_payload($url))]);
+    $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
+    assert_true(strpos($html, 'Buy via Shopify') !== false, 'case/trailing-dot exact host normalizes deterministically');
 }
 
 reset_mocks([mock_json(product_payload()), mock_json(cart_payload(''))]);
@@ -92,4 +103,4 @@ $html = gsco_product_shortcode(['handle' => 'gsco-test-001']);
 assert_true(strpos($html, 'https://checkout.example.test/cart/synthetic') !== false, 'exact configured checkout host is accepted');
 putenv('GSCO_SHOPIFY_CHECKOUT_HOST=');
 
-fwrite(STDOUT, "PASS: 15 deterministic M3 checkout-handoff cases plus fail-closed output assertions\n");
+fwrite(STDOUT, "PASS: 19 deterministic M3 checkout-handoff cases plus fail-closed output assertions\n");
