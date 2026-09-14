@@ -24,13 +24,24 @@ function gsco_normalize_host($value) {
 }
 
 function gsco_validate_checkout_url($checkout_url) {
-    if (!is_string($checkout_url) || !preg_match('#^https://#i', $checkout_url)) {
+    if (!is_string($checkout_url) || trim($checkout_url) === '') {
+        return new WP_Error('gsco_checkout_url', 'Shopify checkout is unavailable.');
+    }
+
+    $parts = parse_url($checkout_url);
+    if (!is_array($parts)
+        || strtolower($parts['scheme'] ?? '') !== 'https'
+        || empty($parts['host'])
+        || isset($parts['user'])
+        || isset($parts['pass'])
+        || (isset($parts['port']) && (int) $parts['port'] !== 443)
+    ) {
         return new WP_Error('gsco_checkout_url', 'Shopify checkout is unavailable.');
     }
 
     $config = gsco_shopify_config();
     $expected_host = gsco_normalize_host(!empty($config['checkout_host']) ? $config['checkout_host'] : $config['store_domain']);
-    $actual_host = gsco_normalize_host($checkout_url);
+    $actual_host = strtolower(rtrim($parts['host'], '.'));
 
     if ($expected_host === '' || $actual_host === '' || $actual_host !== $expected_host) {
         return new WP_Error('gsco_checkout_host', 'Shopify checkout is unavailable.');
