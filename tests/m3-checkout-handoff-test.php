@@ -23,6 +23,14 @@ $result=gsco_shopify_request('query { shop { name } }');
 assert_true(!is_wp_error($result) && count($GLOBALS['gsco_requests'])===1,'canonical Shopify host remains accepted');
 assert_true($GLOBALS['gsco_requests'][0]['url']==='https://example.myshopify.com/api/2026-07/graphql.json','request destination is exact configured Shopify host');
 
+// ProductVariant identity is authority-bearing. Malformed or resource-swapped IDs must fail before cart/network mutation.
+foreach (['gid://shopify/Product/123','gid://shopify/ProductVariant/not-numeric','gid://shopify/ProductVariant/123 ',' gid://shopify/ProductVariant/123','gid://shopify/ProductVariant/0'] as $bad_variant) {
+ $GLOBALS['gsco_requests']=[]; $result=gsco_create_cart_checkout_url($bad_variant);
+ assert_true(is_wp_error($result) && $result->code==='gsco_invalid_variant','malformed variant identity fails closed: '.$bad_variant);
+ assert_true(count($GLOBALS['gsco_requests'])===0,'malformed variant identity performs zero network calls');
+}
+assert_true(gsco_canonical_variant_id('gid://shopify/ProductVariant/123')==='gid://shopify/ProductVariant/123','canonical Shopify variant identity accepted');
+
 // Checkout host is also authority-bearing configuration. Never parse a host out of malformed input.
 foreach (['https://user:pass@checkout.example.com','checkout.example.com/path','checkout.example.com:8443','checkout.example.com@attacker.test',' checkout.example.com'] as $bad) {
  putenv('GSCO_SHOPIFY_CHECKOUT_HOST='.$bad);
@@ -33,19 +41,10 @@ putenv('GSCO_SHOPIFY_CHECKOUT_HOST=checkout.example.com');
 assert_true(gsco_validate_checkout_url('https://checkout.example.com/cart/c1')==='https://checkout.example.com/cart/c1','canonical configured checkout authority accepted');
 assert_true(is_wp_error(gsco_validate_checkout_url('https://attacker.test/cart/c1')),'checkout destination must match configured authority');
 
-// Canonical checkout projection: no downgrade, local-order target, suffix confusion, userinfo, or non-TLS port.
-foreach ([
- 'http://checkout.example.com/cart/c1',
- 'https://localhost/order/123',
- 'https://checkout.example.com.attacker.test/cart/c1',
- 'https://checkout.example.com@attacker.test/cart/c1',
- 'https://user@checkout.example.com/cart/c1',
- 'https://checkout.example.com:80/cart/c1'
-] as $bad_checkout) {
- $GLOBALS['gsco_requests']=[];
- $result=gsco_validate_checkout_url($bad_checkout);
+foreach (['http://checkout.example.com/cart/c1','https://localhost/order/123','https://checkout.example.com.attacker.test/cart/c1','https://checkout.example.com@attacker.test/cart/c1','https://user@checkout.example.com/cart/c1','https://checkout.example.com:80/cart/c1'] as $bad_checkout) {
+ $GLOBALS['gsco_requests']=[]; $result=gsco_validate_checkout_url($bad_checkout);
  assert_true(is_wp_error($result),'non-canonical/local checkout projection fails closed: '.$bad_checkout);
  assert_true(count($GLOBALS['gsco_requests'])===0,'checkout projection validation performs zero network calls');
 }
 assert_true(gsco_validate_checkout_url('https://checkout.example.com:443/cart/c1')==='https://checkout.example.com:443/cart/c1','explicit standard TLS port remains bounded to configured authority');
-fwrite(STDOUT,"PASS: Shopify request and checkout authority boundaries\n");
+fwrite(STDOUT,"PASS: Shopify request, variant identity and checkout authority boundaries\n");
