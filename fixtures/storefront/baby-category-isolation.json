@@ -1,0 +1,40 @@
+{
+  "fixture": "baby-category-isolation",
+  "status": "non-production",
+  "source_config": "docs/storefront/CATEGORY-CONFIG-2026-09-13.yml",
+  "cases": [
+    {
+      "name": "ordinary-baby-product",
+      "tags": ["baby"],
+      "commercially_approved_for_owned_site": true,
+      "price_positive": true,
+      "status": "ACTIVE",
+      "expected": {"baby": true, "safety": false}
+    },
+    {
+      "name": "baby-safety-product",
+      "tags": ["baby-safety"],
+      "commercially_approved_for_owned_site": true,
+      "price_positive": true,
+      "status": "ACTIVE",
+      "expected": {"baby": true, "safety": true}
+    },
+    {
+      "name": "ordinary-baby-qualification-draft",
+      "tags": ["baby", "qualification-draft", "not-publication-approved"],
+      "commercially_approved_for_owned_site": false,
+      "price_positive": true,
+      "status": "DRAFT",
+      "expected": {"baby": false, "safety": false}
+    },
+    {
+      "name": "unrelated-product",
+      "tags": ["pet"],
+      "commercially_approved_for_owned_site": true,
+      "price_positive": true,
+      "status": "ACTIVE",
+      "expected": {"baby": false, "safety": false}
+    }
+  ],
+  "invariant": "generic baby membership must never imply Safety membership or commercial approval"
+}
